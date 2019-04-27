@@ -12,22 +12,43 @@ class SVM:
         self.w_0 = w_0
 
 def train(data, targets, k, C=None):
-    # Compute kernel matrix
-    K = np.array([[k(x_1, x_2) for x_2 in data] for x_1 in data])
-    # Compute P
-    P = targets * targets.transpose() * K
-    q = -np.ones((len(data), 1))
-    G = -np.eye(len(data))
-    h = np.zeros((len(data), 1))
-    A = targets.reshape(1, len(data))
-    A = A.astype(float)
+    
+    if(C == None):
+        # Compute kernel matrix
+        K = np.array([[k(x_1, x_2) for x_2 in data] for x_1 in data])
+        # Compute P
+        P = targets * targets.transpose() * K
+        q = -np.ones((len(data), 1))
+        G = -np.eye(len(data))
+        h = np.zeros((len(data), 1)) # twice as large with Cs at top
+        A = targets.reshape(1, len(data))
+        A = A.astype(float)
+
+    else:
+        # Compute kernel matrix
+        K = np.array([[k(x_1, x_2) for x_2 in data] for x_1 in data])
+        # Compute P
+        P = targets * targets.transpose() * K
+        q = -np.ones((len(data), 1))
+        G2 = np.eye(len(data))
+        G = -np.eye(len(data))
+        G = np.vstack((G2, G)) # For soft margin classification
+        h = np.zeros(len(data))
+        Cs = np.empty(len(data))
+        Cs.fill(C)
+        h = np.append(Cs, h)
+        h = np.reshape(h, (-1, 1)) # For soft margin classification
+        A = targets.reshape(1, len(data))
+        A = A.astype(float)
+
 
     # We'll turn this into a vector in the following line when we pass
     # all these to qp
     b = 0.0
 
     # Solve the QP problem
-    sol = cvxopt.solvers.qp(cvxopt.matrix(P), cvxopt.matrix(q), cvxopt.matrix(
+    solvers.options['show_progress'] = False # Clean up terminal output
+    sol = cvxopt.solvers.qp(cvxopt.matrix(P), cvxopt.matrix(q), cvxopt.matrix( # Can I get rid of what this prints?
     G), cvxopt.matrix(h), cvxopt.matrix(A), cvxopt.matrix(b))
 
     # Retreive the lagrange multipliers
